@@ -1,0 +1,8 @@
+{
+    "files.associations": {},
+    "nrf-connect.debugging.bindings": {
+        "${workspaceFolder}/build": "Launch build"
+    },
+    "C_Cpp.configurationWarnings": "disabled",
+    "nrf-connect.topdir": "${nrf-connect.sdk:2.6.2}"
+}
