@@ -153,7 +153,7 @@ Requirements
 Building and Running
 ********************
 
-Create a build configuration for your board. If you are not using a DK, change CONFIG_DK_LIBRARY to n
+Create a build configuration for your board. If you are not using a DK, change ``CONFIG_DK_LIBRARY`` to ``n``
 
-* To change the order of initialization of the scan and mesh features, change ALTERNATIVE_SEQUENCE in main.c between 0 and 1.
-* To start as mesh provisioner, hold the DK button 1 while booting for a few seconds. If you compiled with CONFIG_DK_LIBRARY=n, then change the value of CONFIG_FOR_NON_DK__IS_PROVISIONER to 1 and recompile.
+* To change the order of initialization of the scan and mesh features, change ``ALTERNATIVE_SEQUENCE`` in ``main.c`` between ``0`` and ``1``.
+* To start as mesh provisioner, hold the DK button 1 while booting for a few seconds. If you compiled with ``CONFIG_DK_LIBRARY=n``, then change the value of ``CONFIG_FOR_NON_DK__IS_PROVISIONER`` to ``1`` and recompile.
