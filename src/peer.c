@@ -123,7 +123,7 @@ static void adv_scanned_cb(struct bt_le_ext_adv *adv,
 	ARG_UNUSED(adv);
 	ARG_UNUSED(info);
 
-	LOG_DBG("SCANNING is working (waiting for filter)");
+	LOG_DBG("SCANNING is working (I've been scanned)");
 }
 
 const static struct bt_le_ext_adv_cb adv_cb = {
@@ -134,6 +134,8 @@ static int adv_start(void)
 {
 	int err;
 	struct bt_le_ext_adv_start_param ext_adv_start_param = {0};
+
+	
 
 	if (adv) {
 		err = bt_le_ext_adv_stop(adv);
@@ -192,6 +194,8 @@ BT_CONN_CB_DEFINE(conn_callbacks) = {
 };
 
 
+BUILD_ASSERT(CONFIG_BT_ID_MAX >= 2, "Insufficient number of available Bluetooth identities");
+
 static int scan_start(void)
 {
 	int err;
@@ -212,12 +216,39 @@ static int scan_start(void)
 	}
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
+	if(err == -EALREADY) { err = 0; } // Mesh may already started to scan
 	if (err) {
 		LOG_ERR("Scanning failed to start (err %d)", err);
 		return err;
 	}
 
 	return err;
+}
+
+static int prepare_identity(void)
+{
+	size_t id_count = 0xFF;
+
+	/* Use different identity from Bluetooth Mesh to avoid conflicts with Mesh Provisioning
+	 * Service and Mesh Proxy Service advertisements.
+	 */
+	(void)bt_id_get(NULL, &id_count);
+
+	if (id_count != 1) {
+		LOG_ERR("Expected only default identity so far, there currently are %d", id_count);
+		return -EINVAL;
+	}
+
+	int id = bt_id_create(NULL, NULL);
+	if (id < 0) {
+		LOG_ERR("Failed to create identity (err %d)", id);
+		return id;
+	}
+
+	adv_param_conn.id = id;
+	adv_param_noconn.id = id;
+
+	return 0;
 }
 
 int peer_start() {
@@ -228,6 +259,12 @@ int peer_start() {
 	mfg_data.support_peer_code = sys_cpu_to_le32(SUPPORT_PEER_CODE);
 	mfg_data.hw_id = dev_uid64; // From hw_config.h
 
+	err = prepare_identity();
+	if (err) {
+		LOG_ERR("Failed to prepare identity (err %d)", err);
+		return err;
+	}
+	
 	err = adv_start();
 	if (err) {
 		LOG_ERR("Failed to start advertising (err %d)", err);

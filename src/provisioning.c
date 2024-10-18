@@ -41,7 +41,7 @@ static const struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(0, sig_models, vnd_models),
 };
 
-static const struct bt_mesh_comp mesh_comp = {
+const struct bt_mesh_comp provisioner_mesh_comp = {
 	.cid = CONFIG_BL_COMPOSITION_COMPANY_ID,
 	.elem = elements,
 	.elem_count = ARRAY_SIZE(elements),
@@ -60,7 +60,7 @@ static void provisining_node_added(
     uint8_t num_elem
 );
 
-static const struct bt_mesh_prov prov = {
+const struct bt_mesh_prov provisioner_prov = {
 	.uuid = prov_dev_uuid,
 	.unprovisioned_beacon = provisining_unprovisioned_beacon,
 	.node_added = provisining_node_added,
@@ -112,15 +112,12 @@ static void setup_cdb(void)
 }
 
 /* Init */
-int provisining_init(void)
+int provisining_init()
 {
 	int err = 0;
 
-	uint8_t net_key[16] = {0};
-    uint8_t dev_key[16] = {0};
-	
 	/* UUID must be set by now */
-	memcpy(dev_uuid, prov.uuid, 16);
+	memcpy(dev_uuid, provisioner_prov.uuid, 16);
 
 	k_work_queue_init(&provisioning_queue);
 	k_work_queue_start(
@@ -130,64 +127,6 @@ int provisining_init(void)
 		CONFIG_BL_MESH_PROVISIONING_PRIORITY,
 		&cfg
 	);
-
-	err = bt_mesh_init(&prov, &mesh_comp);
-	if (err) {
-		LOG_ERR("Initializing mesh failed (err %d)", err);
-		return err;
-	}
-
-	LOG_INF("Mesh initialized");
-
-    if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
-		LOG_INF("Loading stored settings");
-		settings_load();
-	}
-
-	bt_rand(net_key, 16);
-
-	#if IS_ENABLED(CONFIG_SENSIBLE_DATA)
-		for(int i = 0; i < 16; i++) {
-			net_key[i] = i;
-		}
-		LOG_HEXDUMP_INF(net_key, ARRAY_SIZE(net_key), "Netkey is ");
-	#endif
-
-	err = bt_mesh_cdb_create(net_key);
-	if (err == -EALREADY) {
-		LOG_DBG("Using stored CDB");
-	} else if (err) {
-		LOG_ERR("Failed to create CDB (err %d)", err);
-		return err;
-	} else {
-		LOG_DBG("Created CDB");
-		setup_cdb();
-	}
-
-	#if IS_ENABLED(CONFIG_SENSIBLE_DATA)
-		bt_mesh_cdb_iv_update(0, true);
-		LOG_INF("IV index is: %d", 0);
-	#endif
-
-	bt_rand(dev_key, 16);
-
-	err = bt_mesh_provision(
-        net_key,
-        BT_MESH_NET_PRIMARY,
-        0,
-        0,
-        self_addr,
-		dev_key
-    );
-
-    if (err == -EALREADY) {
-		LOG_DBG("Using stored settings");
-	} else if (err) {
-		LOG_ERR("Provisioning failed (err %d)", err);
-		return err;
-	} else {
-		LOG_DBG("Provisioning completed");
-	}
 
 	return 0;
 }
@@ -399,6 +338,60 @@ static void provisioning_work_cb(struct k_work *item) {
 K_WORK_DELAYABLE_DEFINE(provisioning_work, provisioning_work_cb);
 
 int provisioning_start(void) {
+
+	uint8_t net_key[16] = {0};
+    uint8_t dev_key[16] = {0};
+
+	if (IS_ENABLED(CONFIG_BT_SETTINGS)) {
+		LOG_INF("Loading stored settings");
+		settings_load();
+	}
+
+	bt_rand(net_key, 16);
+
+	#if IS_ENABLED(CONFIG_SENSIBLE_DATA)
+		for(int i = 0; i < 16; i++) {
+			net_key[i] = i;
+		}
+		LOG_HEXDUMP_INF(net_key, ARRAY_SIZE(net_key), "Netkey is ");
+	#endif
+
+	int err = bt_mesh_cdb_create(net_key);
+	if (err == -EALREADY) {
+		LOG_DBG("Using stored CDB");
+	} else if (err) {
+		LOG_ERR("Failed to create CDB (err %d)", err);
+		return err;
+	} else {
+		LOG_DBG("Created CDB");
+		setup_cdb();
+	}
+
+	#if IS_ENABLED(CONFIG_SENSIBLE_DATA)
+		bt_mesh_cdb_iv_update(0, true);
+		LOG_INF("IV index is: %d", 0);
+	#endif
+
+	bt_rand(dev_key, 16);
+
+	err = bt_mesh_provision(
+        net_key,
+        BT_MESH_NET_PRIMARY,
+        0,
+        0,
+        self_addr,
+		dev_key
+    );
+
+    if (err == -EALREADY) {
+		LOG_DBG("Using stored settings");
+	} else if (err) {
+		LOG_ERR("Provisioning failed (err %d)", err);
+		return err;
+	} else {
+		LOG_DBG("Provisioning completed");
+	}
+
 	int error_code = k_work_schedule_for_queue(&provisioning_queue, &provisioning_work, K_NO_WAIT);
 	if (error_code < 0) {
 		LOG_ERR("Failed to submit provisioning work (err %d)", error_code);

@@ -21,7 +21,7 @@ static void prov_reset(void)
 	(void)bt_mesh_prov_enable(BT_MESH_PROV_ADV | BT_MESH_PROV_GATT);
 }
 
-static const struct bt_mesh_prov prov = {
+const struct bt_mesh_prov node_prov = {
 	.uuid = dev_uuid,
 	.complete = prov_complete,
 	.reset = prov_reset,
@@ -37,21 +37,15 @@ static const struct bt_mesh_elem elements[] = {
 	BT_MESH_ELEM(0, sig_models, vnd_models),
 };
 
-static const struct bt_mesh_comp comp = {
+const struct bt_mesh_comp node_mesh_comp = {
 	.cid = CONFIG_BL_COMPOSITION_COMPANY_ID,
 	.elem = elements,
 	.elem_count = ARRAY_SIZE(elements),
 };
 
-int node_on_mesh_ready_init(void)
+int node_start(void)
 {
-
-	int err = bt_mesh_init(&prov, &comp);
-	if (err) {
-		LOG_ERR("Initializing mesh failed (err %d)", err);
-		return err;
-	}
-
+	int err = 0;
 	if (IS_ENABLED(CONFIG_SETTINGS)) {
 		err = settings_load();
         if (err) {

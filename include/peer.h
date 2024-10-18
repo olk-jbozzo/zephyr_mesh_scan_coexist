@@ -22,7 +22,6 @@ struct peer_entry {
 	uint16_t timeout_ms;
 };
 
-
 int peer_start();
 
 
