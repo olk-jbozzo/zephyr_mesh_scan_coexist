@@ -21,7 +21,7 @@ This program is based on the following samples:
 
 This sample is flashed into two devices with the same ALTERNATIVE_SEQUENCE define value (See Building and Running section). One device is expected to be inialized as provisioner and provision the other node while at the same time the both nodes advertise and scan eachother.
 
-When the mesh feature is initialized first (ALTERNATIVE_SEQUENCE == 1)
+When the mesh feature is initialized first (ALTERNATIVE_SEQUENCE == 0)
 ----------------------------------------------------------------------
 
 The scan filtering is broken. The device can scan for other devices in the generic scan callback, but it the scan filter callback never gets called.
@@ -88,7 +88,7 @@ Node output:
    [00:00:06.383,148] <inf> node: ================
 
 
-When the scan feature is initialized first (ALTERNATIVE_SEQUENCE == 0)
+When the scan feature is initialized first (ALTERNATIVE_SEQUENCE == 1)
 ----------------------------------------------------------------------
 
 The provisioning is broken. The device is capable of self provisioning, but it cannot provision other nodes.
